@@ -1,0 +1,21 @@
+# ComicCraft — Cursor Rules
+
+You are working on **ComicCraft**, a 1:1 clean-room pure Rust recreation of **Clip Studio Paint (PRO/EX)**.
+
+## Key Directives
+- **Language**: Pure Rust (2021 edition, MSRV 1.85+).
+- **Workspace**: 4 crates: `comiccraft-core`, `comiccraft-clip`, `comiccraft-cli`, `comiccraft-ui`.
+- **GUI**: `eframe` / `egui 0.29`.
+  - Always write explicit `f32` literals (e.g., `1.0_f32`, `1.5_f32`) for `Stroke::new` or dimensions.
+  - Never call `.unwrap()` inside `eframe::App::update` hot loops.
+- **Pixel Buffers**: RGBA8 row-major bytes (`Vec<u8>` with length $4 \times W \times H$).
+- **Clip Studio Parity**:
+  - 12 blend modes: Normal, Multiply, Screen, Overlay, Darken, Lighten, Color Dodge, Color Burn, Hard Light, Soft Light, Difference, Exclusion.
+  - Symmetrical & Perspective rulers.
+  - Quick mask (`Ctrl+Q`), Manga trim marks (Tombō), speed lines, Close-and-Fill.
+  - `.clip` format compatibility (CSFCHUNK + SQLite) must be preserved.
+
+## Verification Commands
+- Check: `cargo check --workspace`
+- Test: `cargo test --workspace`
+- Build release: `cargo build --release --bin comiccraft`
