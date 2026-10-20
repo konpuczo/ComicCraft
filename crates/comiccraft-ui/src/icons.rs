@@ -78,9 +78,9 @@ pub enum StudioIcon {
 pub fn draw_icon(painter: &egui::Painter, rect: Rect, icon: StudioIcon, color: Color32) {
     let c = rect.center();
     let s = rect.width().min(rect.height()) * 0.5;
-    let stroke = Stroke::new(1.35, color);
-    let thin = Stroke::new(1.0, color);
-    let thick = Stroke::new(1.8, color);
+    let stroke = Stroke::new(1.35_f32, color);
+    let thin = Stroke::new(1.0_f32, color);
+    let thick = Stroke::new(1.8_f32, color);
 
     match icon {
         StudioIcon::CspLogo => {
@@ -495,7 +495,7 @@ pub fn draw_icon(painter: &egui::Painter, rect: Rect, icon: StudioIcon, color: C
             let mid = c + Vec2::new(s * 0.15, -s * 0.15);
             let top = c + Vec2::new(s * 0.6, -s * 0.6);
             painter.line_segment([tip, mid], stroke);
-            painter.line_segment([mid, top], Stroke::new(3.2, color));
+            painter.line_segment([mid, top], Stroke::new(3.2_f32, color));
             painter.line_segment(
                 [
                     mid + Vec2::new(-2.8, -2.8),
@@ -692,7 +692,7 @@ pub fn draw_icon(painter: &egui::Painter, rect: Rect, icon: StudioIcon, color: C
                     Pos2::new(c.x - s * 0.65, c.y - s * 0.6),
                     Pos2::new(c.x - s * 0.65, c.y + s * 0.6),
                 ],
-                Stroke::new(2.0, Color32::from_rgb(235, 65, 65)),
+                Stroke::new(2.0_f32, Color32::from_rgb(235, 65, 65)),
             );
         }
         StudioIcon::LighthouseRef => {
@@ -721,7 +721,7 @@ pub fn draw_icon(painter: &egui::Painter, rect: Rect, icon: StudioIcon, color: C
                     Pos2::new(c.x + s * 0.2, c.y - s * 0.68),
                     Pos2::new(c.x + s * 0.2, c.y + s * 0.68),
                 ],
-                Stroke::new(1.5, Color32::from_rgb(55, 165, 245)),
+                Stroke::new(1.5_f32, Color32::from_rgb(55, 165, 245)),
             );
         }
         StudioIcon::BorderEffect => {
@@ -816,7 +816,7 @@ pub fn icon_button(
         painter.rect_stroke(
             rect,
             2.0,
-            Stroke::new(1.0, Color32::from_rgb(80, 150, 250)),
+            Stroke::new(1.0_f32, Color32::from_rgb(80, 150, 250)),
         );
     }
 
@@ -912,7 +912,7 @@ pub fn csp_bar_slider_reserved(
         Color32::from_rgb(42, 92, 168)
     };
     painter.rect_filled(fill_rect, 1.5, bar_col);
-    painter.rect_stroke(rect, 1.5, Stroke::new(1.0, Color32::from_rgb(54, 58, 64)));
+    painter.rect_stroke(rect, 1.5, Stroke::new(1.0_f32, Color32::from_rgb(54, 58, 64)));
 
     // Left label
     painter.text(
@@ -950,7 +950,7 @@ pub fn csp_palette_tabs<T: Copy + PartialEq>(
     painter.rect_filled(bar_rect, 0.0, Color32::from_rgb(31, 33, 37));
     painter.line_segment(
         [bar_rect.left_bottom(), bar_rect.right_bottom()],
-        Stroke::new(1.0, Color32::from_rgb(56, 60, 66)),
+        Stroke::new(1.0_f32, Color32::from_rgb(56, 60, 66)),
     );
 
     // Left hamburger icon
@@ -991,7 +991,7 @@ pub fn csp_palette_tabs<T: Copy + PartialEq>(
             // Subtle top highlight stripe on active palette tab
             painter.line_segment(
                 [t_rect.left_top(), t_rect.right_top()],
-                Stroke::new(1.5, Color32::from_rgb(65, 135, 235)),
+                Stroke::new(1.5_f32, Color32::from_rgb(65, 135, 235)),
             );
         }
 

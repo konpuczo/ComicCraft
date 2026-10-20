@@ -1325,7 +1325,7 @@ impl eframe::App for ComicCraftApp {
                         self.config.secondary_color[2],
                     );
                     painter.rect_filled(s_rect, 1.0, s_col);
-                    painter.rect_stroke(s_rect, 1.0, Stroke::new(1.0, Color32::from_gray(75)));
+                    painter.rect_stroke(s_rect, 1.0, Stroke::new(1.0_f32, Color32::from_gray(75)));
 
                     // Main color
                     let p_col = Color32::from_rgb(
@@ -1339,7 +1339,7 @@ impl eframe::App for ComicCraftApp {
                     } else {
                         Color32::from_gray(90)
                     };
-                    painter.rect_stroke(p_rect, 1.0, Stroke::new(1.5, p_stroke));
+                    painter.rect_stroke(p_rect, 1.0, Stroke::new(1.5_f32, p_stroke));
 
                     // Transparent checkerboard swatch
                     for cy in 0..2 {
@@ -1361,7 +1361,7 @@ impl eframe::App for ComicCraftApp {
                     } else {
                         Color32::from_gray(90)
                     };
-                    painter.rect_stroke(t_rect, 1.0, Stroke::new(1.2, t_stroke));
+                    painter.rect_stroke(t_rect, 1.0, Stroke::new(1.2_f32, t_stroke));
 
                     if resp.clicked() {
                         if let Some(pos) = resp.interact_pointer_pos() {
@@ -2365,7 +2365,7 @@ impl eframe::App for ComicCraftApp {
                             painter.rect_stroke(
                                 c_rect,
                                 1.5,
-                                Stroke::new(1.0, Color32::from_rgb(48, 51, 56)),
+                                Stroke::new(1.0_f32, Color32::from_rgb(48, 51, 56)),
                             );
 
                             let circle_center = c_rect.center() - Vec2::new(0.0, 5.0);
@@ -2760,7 +2760,7 @@ impl eframe::App for ComicCraftApp {
                                     ui.painter().rect_stroke(
                                         s_rect,
                                         1.0,
-                                        Stroke::new(1.0, Color32::from_gray(65)),
+                                        Stroke::new(1.0_f32, Color32::from_gray(65)),
                                     );
                                     if s_resp.clicked() {
                                         self.config.primary_color = [rgb[0], rgb[1], rgb[2], 255];
@@ -2845,7 +2845,7 @@ impl eframe::App for ComicCraftApp {
                                     ui.painter().rect_stroke(
                                         s_rect,
                                         1.0,
-                                        Stroke::new(1.0, Color32::from_gray(60)),
+                                        Stroke::new(1.0_f32, Color32::from_gray(60)),
                                     );
                                     if resp.clicked() {
                                         self.config.primary_color = [rgb[0], rgb[1], rgb[2], 255];
@@ -3141,7 +3141,7 @@ impl eframe::App for ComicCraftApp {
                         painter.rect_filled(row_rect, 1.0, row_bg);
                         painter.line_segment(
                             [row_rect.left_bottom(), row_rect.right_bottom()],
-                            Stroke::new(1.0, Color32::from_rgb(28, 30, 34)),
+                            Stroke::new(1.0_f32, Color32::from_rgb(28, 30, 34)),
                         );
 
                         // Left cell 1: Eye visibility column (22px wide)
@@ -3151,7 +3151,7 @@ impl eframe::App for ComicCraftApp {
                         );
                         painter.line_segment(
                             [eye_col.right_top(), eye_col.right_bottom()],
-                            Stroke::new(1.0, Color32::from_rgb(30, 32, 36)),
+                            Stroke::new(1.0_f32, Color32::from_rgb(30, 32, 36)),
                         );
                         let eye_resp =
                             ui.interact(eye_col, ui.id().with(idx).with("eye"), Sense::click());
@@ -3180,7 +3180,7 @@ impl eframe::App for ComicCraftApp {
                         );
                         painter.line_segment(
                             [stat_col.right_top(), stat_col.right_bottom()],
-                            Stroke::new(1.0, Color32::from_rgb(30, 32, 36)),
+                            Stroke::new(1.0_f32, Color32::from_rgb(30, 32, 36)),
                         );
                         if ref_id == Some(layer.id) {
                             draw_icon(
@@ -3229,7 +3229,7 @@ impl eframe::App for ComicCraftApp {
                         painter.rect_stroke(
                             thumb_rect,
                             1.0,
-                            Stroke::new(1.0, Color32::from_gray(85)),
+                            Stroke::new(1.0_f32, Color32::from_gray(85)),
                         );
 
                         // Layer Name & Blend/Opacity summary
@@ -3472,7 +3472,7 @@ impl eframe::App for ComicCraftApp {
                     if is_active {
                         painter.line_segment(
                             [tab_rect.left_top(), tab_rect.right_top()],
-                            Stroke::new(2.0, Color32::from_rgb(55, 135, 240)),
+                            Stroke::new(2.0_f32, Color32::from_rgb(55, 135, 240)),
                         );
                     }
 

@@ -1043,7 +1043,7 @@ impl CanvasViewport {
             }
 
             canvas_painter.circle_filled(r_screen, 5.0, Color32::from_rgb(185, 120, 255));
-            canvas_painter.circle_stroke(r_screen, 5.0, Stroke::new(1.5, Color32::WHITE));
+            canvas_painter.circle_stroke(r_screen, 5.0, Stroke::new(1.5_f32, Color32::WHITE));
         }
 
         // Perspective Ruler Guide Lines (CSP Authentic Cyan / Purple Horizon & Vanishing Rays)
@@ -1146,7 +1146,7 @@ impl CanvasViewport {
                     let sx = self.canvas_to_screen(Pos2::new(x as f32 - half_w, 0.0)).x;
                     canvas_painter.line_segment(
                         [Pos2::new(sx, sy_top), Pos2::new(sx, sy_bot)],
-                        Stroke::new(0.6, px_grid_col),
+                        Stroke::new(0.6_f32, px_grid_col),
                     );
                 }
                 let sx_left = self.canvas_to_screen(Pos2::new(px0 as f32 - half_w, 0.0)).x;
@@ -1155,7 +1155,7 @@ impl CanvasViewport {
                     let sy = self.canvas_to_screen(Pos2::new(0.0, y as f32 - half_h)).y;
                     canvas_painter.line_segment(
                         [Pos2::new(sx_left, sy), Pos2::new(sx_right, sy)],
-                        Stroke::new(0.6, px_grid_col),
+                        Stroke::new(0.6_f32, px_grid_col),
                     );
                 }
             }
@@ -1250,18 +1250,18 @@ impl CanvasViewport {
                     match config.sub_tool {
                         SubTool::FigureRect => {
                             let p_rect = Rect::from_two_pos(sp_start, sp_curr);
-                            canvas_painter.rect_stroke(p_rect, 0.0, Stroke::new(1.5, stroke_col));
+                            canvas_painter.rect_stroke(p_rect, 0.0, Stroke::new(1.5_f32, stroke_col));
                         }
                         SubTool::FigureEllipse => {
                             let p_rect = Rect::from_two_pos(sp_start, sp_curr);
                             canvas_painter.circle_stroke(
                                 p_rect.center(),
-                                (p_rect.width().max(p_rect.height()) * 0.5),
-                                Stroke::new(1.5, stroke_col),
+                                p_rect.width().max(p_rect.height()) * 0.5,
+                                Stroke::new(1.5_f32, stroke_col),
                             );
                         }
                         SubTool::FigureLine => {
-                            canvas_painter.line_segment([sp_start, sp_curr], Stroke::new(1.5, stroke_col));
+                            canvas_painter.line_segment([sp_start, sp_curr], Stroke::new(1.5_f32, stroke_col));
                         }
                         _ => {}
                     }
@@ -1400,7 +1400,7 @@ impl CanvasViewport {
             let bbox_col = Color32::from_rgb(0, 190, 255);
             canvas_painter.add(egui::Shape::closed_line(
                 screen_corners.to_vec(),
-                Stroke::new(1.8, bbox_col),
+                Stroke::new(1.8_f32, bbox_col),
             ));
 
             // 8 handles (4 corners + 4 edge midpoints)
@@ -1428,13 +1428,13 @@ impl CanvasViewport {
                 canvas_painter.rect_stroke(
                     h_rect,
                     1.0,
-                    Stroke::new(1.0, Color32::from_rgb(20, 40, 60)),
+                    Stroke::new(1.0_f32, Color32::from_rgb(20, 40, 60)),
                 );
             }
 
             // Center pivot
             canvas_painter.circle_filled(screen_center, 4.0, Color32::WHITE);
-            canvas_painter.circle_stroke(screen_center, 4.0, Stroke::new(1.5, bbox_col));
+            canvas_painter.circle_stroke(screen_center, 4.0, Stroke::new(1.5_f32, bbox_col));
 
             // Floating Transform HUD bar below the box
             let max_sy = screen_corners.iter().map(|p| p.y).fold(f32::MIN, f32::max);
@@ -1447,7 +1447,7 @@ impl CanvasViewport {
             canvas_painter.rect_stroke(
                 hud_rect,
                 3.0,
-                Stroke::new(1.0, Color32::from_rgb(70, 75, 85)),
+                Stroke::new(1.0_f32, Color32::from_rgb(70, 75, 85)),
             );
 
             let info_text = format!(
@@ -1635,11 +1635,11 @@ impl CanvasViewport {
 
         painter.line_segment(
             [top_ruler.left_bottom(), top_ruler.right_bottom()],
-            Stroke::new(1.0, border_col),
+            Stroke::new(1.0_f32, border_col),
         );
         painter.line_segment(
             [left_ruler.right_top(), left_ruler.right_bottom()],
-            Stroke::new(1.0, border_col),
+            Stroke::new(1.0_f32, border_col),
         );
         painter.text(
             corner_box.center(),
@@ -1675,7 +1675,7 @@ impl CanvasViewport {
                         Pos2::new(sx, top_ruler.bottom() - h),
                         Pos2::new(sx, top_ruler.bottom()),
                     ],
-                    Stroke::new(1.0, tick_col),
+                    Stroke::new(1.0_f32, tick_col),
                 );
                 if is_major {
                     painter.text(
@@ -1702,7 +1702,7 @@ impl CanvasViewport {
                         Pos2::new(left_ruler.right() - w, sy),
                         Pos2::new(left_ruler.right(), sy),
                     ],
-                    Stroke::new(1.0, tick_col),
+                    Stroke::new(1.0_f32, tick_col),
                 );
                 if is_major {
                     painter.text(
@@ -1726,7 +1726,7 @@ impl CanvasViewport {
                         Pos2::new(ptr.x, top_ruler.top()),
                         Pos2::new(ptr.x, top_ruler.bottom()),
                     ],
-                    Stroke::new(1.5, cursor_col),
+                    Stroke::new(1.5_f32, cursor_col),
                 );
             }
             if ptr.y >= left_ruler.top() && ptr.y <= left_ruler.bottom() {
@@ -1735,7 +1735,7 @@ impl CanvasViewport {
                         Pos2::new(left_ruler.left(), ptr.y),
                         Pos2::new(left_ruler.right(), ptr.y),
                     ],
-                    Stroke::new(1.5, cursor_col),
+                    Stroke::new(1.5_f32, cursor_col),
                 );
             }
         }

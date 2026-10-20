@@ -62,15 +62,15 @@ impl<'a> ColorWheelWidget<'a> {
                 Stroke::NONE,
             ));
         }
-        painter.circle_stroke(center, outer_radius, Stroke::new(1.0, Color32::from_gray(25)));
-        painter.circle_stroke(center, inner_radius, Stroke::new(1.0, Color32::from_gray(25)));
+        painter.circle_stroke(center, outer_radius, Stroke::new(1.0_f32, Color32::from_gray(25)));
+        painter.circle_stroke(center, inner_radius, Stroke::new(1.0_f32, Color32::from_gray(25)));
 
         // Hue ring indicator
         let hue_angle = cur_h * std::f32::consts::TAU;
         let mid_r = (outer_radius + inner_radius) * 0.5;
         let hue_marker = center + Vec2::new(hue_angle.cos(), hue_angle.sin()) * mid_r;
-        painter.circle_stroke(hue_marker, 5.5, Stroke::new(2.0, Color32::WHITE));
-        painter.circle_stroke(hue_marker, 6.5, Stroke::new(1.0, Color32::BLACK));
+        painter.circle_stroke(hue_marker, 5.5, Stroke::new(2.0_f32, Color32::WHITE));
+        painter.circle_stroke(hue_marker, 6.5, Stroke::new(1.0_f32, Color32::BLACK));
 
         // 2. Inner Saturation/Value Square (or HSV Triangle)
         let box_half = (inner_radius * std::f32::consts::FRAC_1_SQRT_2 - 2.0).floor();
@@ -97,14 +97,14 @@ impl<'a> ColorWheelWidget<'a> {
                     painter.rect_filled(cell_rect, 0.0, Color32::from_rgb(c[0], c[1], c[2]));
                 }
             }
-            painter.rect_stroke(sv_rect, 0.0, Stroke::new(1.0, Color32::from_gray(30)));
+            painter.rect_stroke(sv_rect, 0.0, Stroke::new(1.0_f32, Color32::from_gray(30)));
 
             let sv_pos = Pos2::new(
                 sv_rect.min.x + cur_s * sv_rect.width(),
                 sv_rect.min.y + (1.0 - cur_v) * sv_rect.height(),
             );
-            painter.circle_stroke(sv_pos, 4.5, Stroke::new(1.8, Color32::WHITE));
-            painter.circle_stroke(sv_pos, 5.5, Stroke::new(1.0, Color32::BLACK));
+            painter.circle_stroke(sv_pos, 4.5, Stroke::new(1.8_f32, Color32::WHITE));
+            painter.circle_stroke(sv_pos, 5.5, Stroke::new(1.0_f32, Color32::BLACK));
         } else {
             // CSP Triangle HSV mode
             let r_tri = inner_radius - 3.0;
@@ -132,7 +132,7 @@ impl<'a> ColorWheelWidget<'a> {
             }
             painter.add(Shape::closed_line(
                 vec![p_hue, p_white, p_black],
-                Stroke::new(1.0, Color32::from_gray(30)),
+                Stroke::new(1.0_f32, Color32::from_gray(30)),
             ));
         }
 
@@ -147,7 +147,7 @@ impl<'a> ColorWheelWidget<'a> {
             self.secondary_color[2],
         );
         painter.rect_filled(s_box, 1.0, s_col);
-        painter.rect_stroke(s_box, 1.0, Stroke::new(1.0, Color32::from_gray(80)));
+        painter.rect_stroke(s_box, 1.0, Stroke::new(1.0_f32, Color32::from_gray(80)));
 
         let p_col = Color32::from_rgb(
             self.primary_color[0],
@@ -160,7 +160,7 @@ impl<'a> ColorWheelWidget<'a> {
         } else {
             Color32::from_gray(90)
         };
-        painter.rect_stroke(p_box, 1.0, Stroke::new(1.5, p_border));
+        painter.rect_stroke(p_box, 1.0, Stroke::new(1.5_f32, p_border));
 
         // Checkerboard transparent swatch
         for cy in 0..2 {
@@ -182,7 +182,7 @@ impl<'a> ColorWheelWidget<'a> {
         } else {
             Color32::from_gray(85)
         };
-        painter.rect_stroke(t_box, 1.0, Stroke::new(1.2, t_border));
+        painter.rect_stroke(t_box, 1.0, Stroke::new(1.2_f32, t_border));
 
         // 4. Bottom-left HSV/RGB compact readout inside wheel well
         painter.text(
@@ -210,9 +210,9 @@ impl<'a> ColorWheelWidget<'a> {
         // 5. Bottom-right Square/Triangle Mode Toggle Button (authentic CSP corner icon)
         let mode_rect = Rect::from_min_size(rect.right_bottom() - Vec2::new(22.0, 22.0), Vec2::splat(18.0));
         painter.rect_filled(mode_rect, 2.0, Color32::from_rgb(48, 51, 57));
-        painter.rect_stroke(mode_rect, 2.0, Stroke::new(1.0, Color32::from_gray(90)));
+        painter.rect_stroke(mode_rect, 2.0, Stroke::new(1.0_f32, Color32::from_gray(90)));
         if *self.triangle_mode {
-            painter.rect_stroke(mode_rect.shrink(4.5), 0.5, Stroke::new(1.2, Color32::WHITE));
+            painter.rect_stroke(mode_rect.shrink(4.5), 0.5, Stroke::new(1.2_f32, Color32::WHITE));
         } else {
             let mc = mode_rect.center();
             painter.add(Shape::closed_line(
@@ -221,7 +221,7 @@ impl<'a> ColorWheelWidget<'a> {
                     mc + Vec2::new(4.5, 4.0),
                     mc + Vec2::new(-4.5, 4.0),
                 ],
-                Stroke::new(1.2, Color32::WHITE),
+                Stroke::new(1.2_f32, Color32::WHITE),
             ));
         }
 
