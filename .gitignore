@@ -1,0 +1,30 @@
+# Rust build artifacts
+/target/
+/target-fixed/
+**/*.rs.bk
+
+# Compiled binaries
+*.exe
+*.dll
+*.so
+*.dylib
+*.pdb
+
+# Distribution packages & archives
+/dist/
+*.zip
+*.tar.gz
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Operating System files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporary files & logs
+*.log
+gui_err.txt

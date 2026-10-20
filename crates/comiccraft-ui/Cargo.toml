@@ -1,0 +1,20 @@
+[package]
+name = "comiccraft-ui"
+version = "0.1.0"
+edition = "2021"
+authors = ["ArtCraft Contributors"]
+description = "Clip Studio Paint 1:1 Studio GUI recreation for ArtCraft"
+
+[[bin]]
+name = "comiccraft"
+path = "src/main.rs"
+
+[dependencies]
+comiccraft-core = { path = "../comiccraft-core" }
+comiccraft-clip = { path = "../comiccraft-clip" }
+eframe = { version = "0.29", default-features = true, features = ["wgpu"] }
+image = "0.25"
+rfd = "0.15"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+arboard = "3.7.0"
