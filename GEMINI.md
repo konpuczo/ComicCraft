@@ -13,7 +13,7 @@ Welcome to the dedicated Antigravity workspace for **ComicCraft Studio**.
 ComicCraft Studio is structured as a modular Cargo workspace:
 
 ```
-C:\ArtCraft/
+D:\projects\ComicCraft/
 ├── Cargo.toml                    # Workspace definition
 ├── README.md                     # Documentation & specifications
 ├── GEMINI.md                     # Antigravity project memory & guidelines

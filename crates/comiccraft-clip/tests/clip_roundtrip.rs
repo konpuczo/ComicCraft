@@ -122,7 +122,13 @@ fn test_external_clip_to_psd_compatibility() {
 
     save_clip_file(&doc, &test_clip).expect("Failed to save .clip");
 
-    let script = Path::new(r"C:\ArtCraft\reference\clip_to_psd.py");
+    let manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
+    let script_rel = manifest_dir.join("../../reference/clip_to_psd.py");
+    let script = if script_rel.exists() {
+        script_rel
+    } else {
+        std::path::PathBuf::from(r"C:\ArtCraft\reference\clip_to_psd.py")
+    };
     if script.exists() {
         let status = std::process::Command::new("python")
             .arg(&script)

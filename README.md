@@ -54,7 +54,7 @@
 ## 📁 Repository Structure
 
 ```
-C:\ArtCraft/
+D:\projects\ComicCraft/
 ├── Cargo.toml                    # Workspace definition (MIT OR Apache-2.0)
 ├── README.md                     # Documentation & specification
 └── crates/
