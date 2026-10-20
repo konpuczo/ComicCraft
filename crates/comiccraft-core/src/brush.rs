@@ -124,8 +124,8 @@ impl BrushPreset {
             // ---------------- Pen ----------------
             SubTool::GPen => BrushPreset {
                 size_min: 0.08,
-                taper_in: 2.0,
-                taper_out: 3.0,
+                taper_in: 0.0,
+                taper_out: 0.0,
                 default_size: 8.0,
                 default_stabilization: 10,
                 ..b
@@ -133,8 +133,8 @@ impl BrushPreset {
             SubTool::RealGPen => BrushPreset {
                 size_min: 0.15,
                 opacity_min: 0.55,
-                taper_in: 1.5,
-                taper_out: 2.5,
+                taper_in: 0.0,
+                taper_out: 0.0,
                 roughness: 0.12,
                 default_size: 9.0,
                 default_stabilization: 10,
@@ -690,25 +690,19 @@ impl StrokeState {
         if n == 1 {
             self.place_dab(pt, layer, sel);
             self.last_sample = Some(pt);
-        } else if n >= 3 {
-            // Render the curve segment pts[n-3] -> pts[n-2] (one point of lag for tangents).
-            let p0 = self.pts[n.saturating_sub(4).max(0)];
-            let p0 = if n >= 4 { p0 } else { self.pts[n - 3] };
-            let (p1, p2, p3) = (self.pts[n - 3], self.pts[n - 2], self.pts[n - 1]);
+        } else if n >= 2 {
+            // Immediately render the segment pts[n-2] -> pts[n-1] with zero lag
+            let p0 = if n >= 3 { self.pts[n - 3] } else { self.pts[n - 2] };
+            let p1 = self.pts[n - 2];
+            let p2 = self.pts[n - 1];
+            let p3 = p2;
             self.render_curve(p0, p1, p2, p3, layer, sel);
         }
         self.apply(layer, sel)
     }
 
-    /// Finishes the stroke: renders the final segment and applies end taper.
+    /// Finishes the stroke: applies end taper pass if configured.
     pub fn finish(&mut self, layer: &mut Layer, sel: &Selection) -> Option<[u32; 4]> {
-        let n = self.pts.len();
-        if n >= 2 {
-            let p0 = if n >= 3 { self.pts[n - 3] } else { self.pts[n - 2] };
-            let (p1, p2) = (self.pts[n - 2], self.pts[n - 1]);
-            self.render_curve(p0, p1, p2, p2, layer, sel);
-        }
-
         let tapered = (self.preset.taper_in > 0.0 || self.preset.taper_out > 0.0)
             && self.preset.mode.uses_mask()
             && !self.dabs.is_empty();
@@ -761,7 +755,7 @@ impl StrokeState {
             let t = (dist / tin).clamp(0.0, 1.0);
             f = f.min(t.powf(0.75));
         }
-        f.max(0.06)
+        f.max(0.25)
     }
 
     fn render_curve(

@@ -51,6 +51,7 @@ pub struct CanvasViewport {
     pub active_transform: Option<TransformState>,
     pub transform_texture: Option<TextureHandle>,
     pub transform_drag_mode: Option<TransformDragMode>,
+    pub current_stylus_pressure: Option<f32>,
 }
 
 impl Default for CanvasViewport {
@@ -81,6 +82,7 @@ impl Default for CanvasViewport {
             active_transform: None,
             transform_texture: None,
             transform_drag_mode: None,
+            current_stylus_pressure: None,
         }
     }
 }
@@ -455,13 +457,30 @@ impl CanvasViewport {
             // 2. Process Tool & Brush Input BEFORE uploading GPU texture
             let is_eyedropper_active = config.tool == ToolKind::Eyedropper || input.modifiers.alt;
 
+            let is_zoom_mode = config.tool == ToolKind::Zoom
+                || (input.key_down(egui::Key::Z) && !input.modifiers.command)
+                || (input.key_down(egui::Key::Space) && input.modifiers.command);
+
             let mut stylus_pressure = None;
             for ev in &input.events {
-                if let egui::Event::Touch { force, .. } = ev {
+                if let egui::Event::Touch { force, phase, .. } = ev {
                     if let Some(f) = force {
-                        stylus_pressure = Some(*f);
+                        if *f > 0.0 {
+                            let p = (*f).clamp(0.01, 1.0);
+                            stylus_pressure = Some(p);
+                            self.current_stylus_pressure = Some(p);
+                        }
+                    }
+                    if matches!(phase, egui::TouchPhase::End | egui::TouchPhase::Cancel) {
+                        self.current_stylus_pressure = None;
                     }
                 }
+            }
+            if stylus_pressure.is_none() {
+                stylus_pressure = self.current_stylus_pressure;
+            }
+            if !input.pointer.primary_down() {
+                self.current_stylus_pressure = None;
             }
 
             if let Some(screen_ptr) = latest_ptr {
@@ -480,8 +499,27 @@ impl CanvasViewport {
                         history.push_state("Fill", doc);
                         doc.flood_fill(pixel_x as u32, pixel_y as u32, config);
                     }
-                } else if config.tool == ToolKind::Zoom {
-                    if response.clicked() {
+                } else if is_zoom_mode {
+                    ui.ctx().set_cursor_icon(if input.modifiers.alt {
+                        egui::CursorIcon::ZoomOut
+                    } else {
+                        egui::CursorIcon::ZoomIn
+                    });
+                    if self.is_drawing {
+                        doc.end_stroke();
+                        self.is_drawing = false;
+                        self.last_point = None;
+                    }
+                    if response.dragged_by(egui::PointerButton::Primary) || (input.pointer.primary_down() && response.hovered()) {
+                        let delta = input.pointer.delta();
+                        if delta.x != 0.0 || delta.y != 0.0 {
+                            let factor = 1.0 + (delta.x - delta.y) * 0.008;
+                            let old_zoom = self.zoom;
+                            self.zoom = (self.zoom * factor).clamp(0.05, 32.0);
+                            let offset = screen_ptr.to_vec2() - self.pan;
+                            self.pan += offset * (1.0 - self.zoom / old_zoom);
+                        }
+                    } else if response.clicked() || (input.pointer.primary_released() && !response.dragged()) {
                         let factor = if input.modifiers.alt { 0.77 } else { 1.3 };
                         let old_zoom = self.zoom;
                         self.zoom = (self.zoom * factor).clamp(0.05, 32.0);
@@ -719,7 +757,7 @@ impl CanvasViewport {
                         _ => {}
                     }
                 } else {
-                    let is_brush_tool = matches!(
+                    let is_brush_tool = !is_zoom_mode && matches!(
                         config.tool,
                         ToolKind::Pen
                             | ToolKind::Pencil
@@ -729,21 +767,26 @@ impl CanvasViewport {
                             | ToolKind::Screentone
                     );
 
+                    let primary_down = input.pointer.primary_down();
+                    let primary_pressed = input.pointer.primary_pressed();
+                    let in_bounds = rect.contains(screen_ptr);
+
                     let is_vector_layer = doc.layers.get(doc.active_layer_idx).map_or(false, |l| l.is_vector());
                     if config.tool == ToolKind::Eraser && is_vector_layer {
-                        if response.drag_started_by(egui::PointerButton::Primary) {
+                        if !self.is_drawing && primary_down && (primary_pressed || response.hovered()) {
                             stroke_started = true;
                             history.push_state("Vector Erase", doc);
                             self.is_drawing = true;
                             doc.erase_vector_at(pixel_x, pixel_y, config.size * 0.5);
-                        } else if self.is_drawing && input.pointer.primary_down() {
+                        } else if self.is_drawing && primary_down {
                             doc.erase_vector_at(pixel_x, pixel_y, config.size * 0.5);
                         }
-                        if response.drag_stopped() && self.is_drawing {
+                        if self.is_drawing && !primary_down {
                             self.is_drawing = false;
                         }
                     } else if is_brush_tool {
-                        if response.drag_started_by(egui::PointerButton::Primary) {
+                        // 1. Begin stroke immediately on first touch/click in canvas
+                        if !self.is_drawing && primary_down && (primary_pressed || response.drag_started_by(egui::PointerButton::Primary) || (in_bounds && response.hovered())) {
                             stroke_started = true;
                             history.push_state("Brush Stroke", doc);
                             self.is_drawing = true;
@@ -751,12 +794,12 @@ impl CanvasViewport {
                             self.stroke_point_count = 1;
                             self.last_stroke_time = input.time;
 
-                            let initial_pressure = stylus_pressure.unwrap_or(0.65);
+                            let initial_pressure = stylus_pressure.unwrap_or(0.70);
                             let pt = StrokePoint::new(pixel_x, pixel_y, initial_pressure);
                             let smooth_pt = self.stabilizer.push(pt);
                             doc.begin_stroke(smooth_pt, config);
                             self.last_point = Some(smooth_pt);
-                        } else if self.is_drawing && input.pointer.primary_down() {
+                        } else if self.is_drawing && primary_down {
                             // Collect all high-frequency PointerMoved samples from this frame
                             let mut screen_samples: Vec<Pos2> = input
                                 .events
@@ -780,7 +823,7 @@ impl CanvasViewport {
                                 let sy = (cp.y + half_h).clamp(0.0, doc.height as f32);
 
                                 let pressure = match stylus_pressure {
-                                    Some(p) => p.clamp(0.05, 1.0),
+                                    Some(p) => p.clamp(0.02, 1.0),
                                     None => {
                                         if let Some(prev) = self.last_point {
                                             let dist =
@@ -788,10 +831,10 @@ impl CanvasViewport {
                                                     .sqrt();
                                             let speed = dist / dt_step;
                                             let target_p =
-                                                (0.88 - (speed / 2400.0)).clamp(0.22, 0.95);
+                                                (0.92 - (speed / 2600.0)).clamp(0.25, 1.0);
                                             prev.pressure * 0.65 + target_p * 0.35
                                         } else {
-                                            0.65
+                                            0.70
                                         }
                                     }
                                 };
@@ -804,7 +847,8 @@ impl CanvasViewport {
                             }
                         }
 
-                        if response.drag_stopped() && self.is_drawing {
+                        // 2. Terminate the stroke reliably when primary button is released
+                        if self.is_drawing && (!primary_down || input.pointer.primary_released()) {
                             doc.end_stroke();
                             self.is_drawing = false;
                             self.last_point = None;
@@ -1514,7 +1558,19 @@ impl CanvasViewport {
         }
 
         // Authentic Clip Studio Paint Brush Outline Cursor (circular or angled nib)
-        if response.hovered() && !input.pointer.middle_down() && !input.key_down(egui::Key::Space) {
+        let is_zoom_mode = config.tool == ToolKind::Zoom
+            || (input.key_down(egui::Key::Z) && !input.modifiers.command)
+            || (input.key_down(egui::Key::Space) && input.modifiers.command);
+
+        if is_zoom_mode && response.hovered() {
+            ui.ctx().set_cursor_icon(if input.modifiers.alt {
+                egui::CursorIcon::ZoomOut
+            } else {
+                egui::CursorIcon::ZoomIn
+            });
+        }
+
+        if response.hovered() && !is_zoom_mode && !input.pointer.middle_down() && !input.key_down(egui::Key::Space) {
             if let Some(screen_ptr) = latest_ptr {
                 if rect.contains(screen_ptr) {
                     let is_brush = matches!(

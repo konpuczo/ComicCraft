@@ -5,6 +5,7 @@ mod canvas_view;
 mod clipboard_utils;
 mod color_wheel;
 mod icons;
+pub mod updater;
 
 use app::ComicCraftApp;
 use comiccraft_clip::open_clip_file;
@@ -128,6 +129,7 @@ fn main() -> eframe::Result<()> {
         Box::new(move |cc| {
             app::setup_csp_dark_theme(&cc.egui_ctx);
             let mut app = ComicCraftApp::default();
+            app.updater.check_for_updates(cc.egui_ctx.clone());
             app.screenshot_target = screenshot_path;
             if let Some(first_file) = files.into_iter().next() {
                 match open_clip_file(&first_file) {

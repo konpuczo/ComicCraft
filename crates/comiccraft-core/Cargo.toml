@@ -1,6 +1,6 @@
 [package]
 name = "comiccraft-core"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 authors = ["ArtCraft Contributors"]
 description = "Core drawing engine, document model, layers, and stabilizer for ComicCraft (Clip Studio Paint recreation)"

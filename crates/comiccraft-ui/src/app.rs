@@ -257,6 +257,7 @@ pub struct ComicCraftApp {
     pub shrink_dialog: ShrinkSelectionDialog,
     pub quick_mask_active: bool,
     pub pre_quick_mask_active_layer: usize,
+    pub updater: crate::updater::AppUpdater,
 }
 
 impl Default for ComicCraftApp {
@@ -328,6 +329,7 @@ impl Default for ComicCraftApp {
             shrink_dialog: ShrinkSelectionDialog::default(),
             quick_mask_active: false,
             pre_quick_mask_active_layer: 1,
+            updater: crate::updater::AppUpdater::default(),
         };
         app.load_persisted_custom_subtools();
         app
@@ -851,7 +853,13 @@ impl eframe::App for ComicCraftApp {
                             RichText::new("ComicCraft — Clip Studio Paint 1:1 Studio Edition")
                                 .strong(),
                         );
-                        ui.label("Version 0.1.0 • Learning Machines LLC / ArtCraft Suite");
+                        ui.label(format!("Version {} • Learning Machines LLC / ArtCraft Suite", env!("CARGO_PKG_VERSION")));
+                        ui.separator();
+                        if ui.button("🔄 Check for Updates...").clicked() {
+                            self.updater.open_dialog();
+                            self.updater.check_for_updates(ui.ctx().clone());
+                            ui.close_menu();
+                        }
                     });
                 });
             });
@@ -3741,6 +3749,7 @@ impl eframe::App for ComicCraftApp {
         }
 
         self.render_filter_dialogs(ctx);
+        self.render_update_dialog(ctx);
     }
 }
 
@@ -4665,6 +4674,114 @@ impl ComicCraftApp {
             } else if close {
                 self.shrink_dialog.open = false;
             }
+        }
+    }
+
+    fn render_update_dialog(&mut self, ctx: &egui::Context) {
+        let status = self.updater.get_status();
+        let is_open = self.updater.is_open();
+
+        if !is_open {
+            return;
+        }
+
+        let mut close_dialog = false;
+
+        egui::Window::new("Check for Updates — CLIP STUDIO PAINT")
+            .collapsible(false)
+            .resizable(false)
+            .anchor(Align2::CENTER_CENTER, Vec2::ZERO)
+            .default_width(420.0)
+            .show(ctx, |ui| {
+                ui.add_space(6.0);
+                match status {
+                    crate::updater::UpdateStatus::Idle => {
+                        ui.label("Click below to check for the latest ComicCraft releases on GitHub.");
+                        ui.add_space(8.0);
+                        if ui.button("Check Now").clicked() {
+                            self.updater.check_for_updates(ctx.clone());
+                        }
+                    }
+                    crate::updater::UpdateStatus::Checking => {
+                        ui.horizontal(|ui| {
+                            ui.spinner();
+                            ui.label("Checking GitHub for the latest version...");
+                        });
+                    }
+                    crate::updater::UpdateStatus::UpToDate => {
+                        ui.label(RichText::new("✓ You are using the latest version of ComicCraft!").color(Color32::from_rgb(100, 220, 100)).strong());
+                        ui.add_space(4.0);
+                        ui.label(format!("Current version: v{}", env!("CARGO_PKG_VERSION")));
+                    }
+                    crate::updater::UpdateStatus::Available {
+                        version,
+                        name,
+                        notes,
+                        download_url,
+                        zip_url,
+                    } => {
+                        ui.label(RichText::new("🚀 A new update is available!").strong().color(Color32::from_rgb(80, 160, 255)));
+                        ui.add_space(4.0);
+                        ui.label(format!("Version: {} ({})", version, name));
+                        ui.add_space(4.0);
+                        ui.separator();
+                        ui.label(RichText::new("Release Notes:").small().strong());
+                        egui::ScrollArea::vertical()
+                            .max_height(140.0)
+                            .show(ui, |ui| {
+                                ui.label(&notes);
+                            });
+                        ui.separator();
+                        ui.add_space(4.0);
+                        ui.horizontal(|ui| {
+                            if let Some(zip) = zip_url {
+                                if ui.button(RichText::new("📥 Download Update").strong()).clicked() {
+                                    self.updater.download_update(zip, ctx.clone());
+                                }
+                            }
+                            if ui.button("🌐 View on GitHub").clicked() {
+                                ctx.open_url(egui::OpenUrl::new_tab(&download_url));
+                            }
+                        });
+                    }
+                    crate::updater::UpdateStatus::Downloading { progress } => {
+                        ui.label("Downloading update package...");
+                        ui.add_space(4.0);
+                        ui.add(egui::ProgressBar::new(progress).show_percentage());
+                    }
+                    crate::updater::UpdateStatus::ReadyToRestart { path } => {
+                        ui.label(RichText::new("✓ Update downloaded successfully!").color(Color32::from_rgb(100, 220, 100)).strong());
+                        ui.add_space(4.0);
+                        ui.label(format!("Package saved to: {}", path.display()));
+                        ui.add_space(6.0);
+                        ui.horizontal(|ui| {
+                            if ui.button("Open Folder").clicked() {
+                                if let Some(parent) = path.parent() {
+                                    let _ = std::process::Command::new("explorer").arg(parent).spawn();
+                                }
+                            }
+                        });
+                    }
+                    crate::updater::UpdateStatus::Error(err) => {
+                        ui.label(RichText::new(format!("⚠ Update check failed: {}", err)).color(Color32::from_rgb(255, 100, 100)));
+                        ui.add_space(6.0);
+                        if ui.button("Retry").clicked() {
+                            self.updater.check_for_updates(ctx.clone());
+                        }
+                    }
+                }
+
+                ui.add_space(8.0);
+                ui.separator();
+                ui.horizontal(|ui| {
+                    if ui.button("Close").clicked() {
+                        close_dialog = true;
+                    }
+                });
+            });
+
+        if close_dialog {
+            self.updater.close_dialog();
         }
     }
 
