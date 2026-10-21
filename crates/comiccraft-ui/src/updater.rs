@@ -92,6 +92,18 @@ impl AppUpdater {
                 }
             };
 
+            // A 403 rate-limit or 404 (no releases yet) still returns parseable JSON,
+            // just without `tag_name`. Without this guard that empty tag flows into
+            // is_newer_semver and used to render a bogus "update available" dialog.
+            if !resp.status().is_success() {
+                *status_arc.lock() = UpdateStatus::Error(format!(
+                    "GitHub returned HTTP {} when checking for updates",
+                    resp.status().as_u16()
+                ));
+                ctx.request_repaint();
+                return;
+            }
+
             if let Ok(v) = resp.json::<serde_json::Value>() {
                 let tag = v.get("tag_name").and_then(|t| t.as_str()).unwrap_or("").trim_start_matches('v');
                 let name = v.get("name").and_then(|n| n.as_str()).unwrap_or("Latest Release").to_string();
@@ -208,8 +220,11 @@ pub fn is_newer_semver(remote: &str, current: &str) -> bool {
     };
     let r = parse_nums(remote);
     let c = parse_nums(current);
-    if r.is_empty() || c.is_empty() {
-        return remote != current;
+    if r.is_empty() {
+        return false;
+    }
+    if c.is_empty() {
+        return true; 
     }
     for (rv, cv) in r.iter().zip(c.iter()) {
         if rv > cv {
@@ -220,4 +235,45 @@ pub fn is_newer_semver(remote: &str, current: &str) -> bool {
         }
     }
     r.len() > c.len()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::is_newer_semver;
+
+    #[test]
+    fn semver_comparison_table() {
+        const CASES: &[(&str, &str, bool)] = &[
+            // Malformed / missing tags must NEVER claim an update (regression: empty
+            // tag previously hit the `remote != current` fallback and returned true).
+            ("", "0.1.1", false),
+            ("v", "0.1.1", false),
+            ("not-a-version", "0.1.1", false),
+            ("release-2026", "0.1.1", false),
+            // Equal versions are never "newer".
+            ("0.1.1", "0.1.1", false),
+            ("v0.1.1", "0.1.1", false),
+            // Real upgrades.
+            ("0.1.2", "0.1.1", true),
+            ("v0.2.0", "0.1.1", true),
+            ("1.0.0", "0.1.1", true),
+            ("0.1.1.1", "0.1.1", true),
+            ("1.0", "0.1.1", true),
+            // Downgrades / shorter-but-equal prefixes.
+            ("0.1.0", "0.1.1", false),
+            ("0.1", "0.1.1", false),
+            ("0.0.9", "0.1.0", false),
+            // Prerelease suffix is stripped before comparison.
+            ("0.1.1-rc1", "0.1.0", true),
+            // Corrupt local version with a valid remote tag → offer the update.
+            ("0.1.1", "", true),
+        ];
+        for (remote, current, expected) in CASES {
+            assert_eq!(
+                is_newer_semver(remote, current),
+                *expected,
+                "is_newer_semver({remote:?}, {current:?})"
+            );
+        }
+    }
 }

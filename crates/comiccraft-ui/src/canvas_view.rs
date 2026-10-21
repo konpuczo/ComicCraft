@@ -16,6 +16,41 @@ use eframe::egui::{
 };
 use std::hash::{Hash, Hasher};
 
+/// Keyboard/modifier state that decides whether the canvas is in transient "zoom mode".
+///
+/// `egui::InputState::key_down` is level-triggered and **focus-agnostic** (it is just
+/// `keys_down.contains(key)`), so a key held while a `TextEdit` owns the keyboard still
+/// reads as held. Without the `text_focused` gate, typing `z` into a layer-name field put
+/// the canvas into zoom mode for as long as the key was down: drags changed zoom and brush
+/// input was silently suppressed (`is_brush_tool = !is_zoom_mode && ...`).
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct CanvasKeyState {
+    pub z_held: bool,
+    pub space_held: bool,
+    pub command: bool,
+    pub text_focused: bool,
+}
+
+impl CanvasKeyState {
+    /// Samples live key state plus keyboard focus from the egui context.
+    pub fn from_input(input: &egui::InputState, ctx: &egui::Context) -> Self {
+        Self {
+            z_held: input.key_down(egui::Key::Z),
+            space_held: input.key_down(egui::Key::Space),
+            command: input.modifiers.command,
+            text_focused: ctx.memory(|mem| mem.focused().is_some()),
+        }
+    }
+
+    /// True when the canvas should act like the Zoom tool: the tool itself, or the
+    /// transient `Z` (zoom in) / `Cmd+Space` (zoom out) modifiers while nothing is typing.
+    pub fn zoom_mode(&self, tool: ToolKind) -> bool {
+        tool == ToolKind::Zoom
+            || (!self.text_focused
+                && ((self.z_held && !self.command) || (self.space_held && self.command)))
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum TransformDragMode {
     Move,
@@ -457,9 +492,8 @@ impl CanvasViewport {
             // 2. Process Tool & Brush Input BEFORE uploading GPU texture
             let is_eyedropper_active = config.tool == ToolKind::Eyedropper || input.modifiers.alt;
 
-            let is_zoom_mode = config.tool == ToolKind::Zoom
-                || (input.key_down(egui::Key::Z) && !input.modifiers.command)
-                || (input.key_down(egui::Key::Space) && input.modifiers.command);
+            let key_state = CanvasKeyState::from_input(&input, ui.ctx());
+            let is_zoom_mode = key_state.zoom_mode(config.tool);
 
             let mut stylus_pressure = None;
             for ev in &input.events {
@@ -773,7 +807,14 @@ impl CanvasViewport {
 
                     let is_vector_layer = doc.layers.get(doc.active_layer_idx).map_or(false, |l| l.is_vector());
                     if config.tool == ToolKind::Eraser && is_vector_layer {
-                        if !self.is_drawing && primary_down && (primary_pressed || response.hovered()) {
+                        // Edge-triggered: the press must have happened while already
+                        // hovering the canvas, otherwise a press started on a widget
+                        // (color wheel, dock tab) and dragged in would paint-broadcast.
+                        if !self.is_drawing
+                            && primary_down
+                            && ((primary_pressed && response.hovered())
+                                || response.drag_started_by(egui::PointerButton::Primary))
+                        {
                             stroke_started = true;
                             history.push_state("Vector Erase", doc);
                             self.is_drawing = true;
@@ -786,7 +827,15 @@ impl CanvasViewport {
                         }
                     } else if is_brush_tool {
                         // 1. Begin stroke immediately on first touch/click in canvas
-                        if !self.is_drawing && primary_down && (primary_pressed || response.drag_started_by(egui::PointerButton::Primary) || (in_bounds && response.hovered())) {
+                        // Edge-triggered stroke start: either the button was pressed
+                        // this frame while the pointer was already over the canvas, or
+                        // a drag originated on the canvas itself. A press that began
+                        // on another widget and merely dragged in must not draw.
+                        if !self.is_drawing
+                            && primary_down
+                            && ((primary_pressed && in_bounds && response.hovered())
+                                || response.drag_started_by(egui::PointerButton::Primary))
+                        {
                             stroke_started = true;
                             history.push_state("Brush Stroke", doc);
                             self.is_drawing = true;
